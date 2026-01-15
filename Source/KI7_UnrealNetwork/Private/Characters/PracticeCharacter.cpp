@@ -6,8 +6,6 @@
 #include "Components/WidgetComponent.h"
 #include "UI/DataLineWidget.h"
 #include "Framework/PracticePlayerController.h"
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 APracticeCharacter::APracticeCharacter()
@@ -17,8 +15,6 @@ APracticeCharacter::APracticeCharacter()
 
 	HealthWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthWidget"));
 	HealthWidgetComponent->SetupAttachment(RootComponent);
-
-	HealthWidgetComponent->SetWidgetSpace(EWidgetSpace::World);
 }
 
 // Called when the game starts or when spawned
@@ -40,32 +36,17 @@ void APracticeCharacter::Tick(float DeltaTime)
 
 	if (HealthWidgetComponent)
 	{
-		APlayerCameraManager* CameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
-		if (CameraManager)
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		if (PC && PC->PlayerCameraManager)
 		{
-			FVector CameraForward = CameraManager->GetActorForwardVector();
+			// 회전 -> 벡터 만들기 가능(해당 회전으로 인한 Forward 백터를 만듬)
+			// 벡터 -> 회전 만들기 가능
 
-			FVector TargetVector = -CameraForward;
-
-			FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(TargetVector);
-
-			HealthWidgetComponent->SetWorldRotation(NewRotation);
+			FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();	// 카메라의 Forward 백터
+			FVector WidgetForward = CameraForward * -1.0f;
+			HealthWidgetComponent->SetWorldRotation(WidgetForward.Rotation());
 		}
 	}
-
-	//if (HealthWidgetComponent)
-	//{
-	//	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	//	if (PC && PC->PlayerCameraManager)
-	//	{
-	//		// 회전 -> 벡터 만들기 가능(해당 회전으로 인한 Forward 백터를 만듬)
-	//		// 벡터 -> 회전 만들기 가능
-
-	//		FVector CameraForward = PC->PlayerCameraManager->GetCameraRotation().Vector();	// 카메라의 Forward 백터
-	//		FVector WidgetForward = CameraForward * -1.0f;
-	//		HealthWidgetComponent->SetWorldRotation(WidgetForward.Rotation());
-	//	}
-	//}
 }
 
 // Called to bind functionality to input
