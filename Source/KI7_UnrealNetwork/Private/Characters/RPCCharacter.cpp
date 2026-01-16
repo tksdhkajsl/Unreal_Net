@@ -43,7 +43,6 @@ void ARPCCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// Health 변수를 리플리케이션 하겠다고 등록
 	DOREPLIFETIME(ARPCCharacter, Health);
 }
 
@@ -59,14 +58,24 @@ void ARPCCharacter::OnTakeDamage(AActor* DamagedActor, float Damage, const UDama
 {
 	if (HasAuthority())
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("맞았음"));
-	
 		Health -= Damage;
 
 		if (IsLocallyControlled())
 		{
 			OnRef_Health();	// 서버는 리플리케이션이 없으므로 수동으로 UI 같은 것들 갱신
 		}
+
+		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("맞았음"));	
+		//APlayerController* PC = Cast<APlayerController>(GetController());
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1, 5.0f, FColor::Yellow,
+		//	FString::Printf(TEXT("Contoller: %s"), PC ? *PC->GetName() : TEXT("null")));
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1, 5.0f, FColor::Yellow,
+		//	FString::Printf(TEXT("Owner: %s"), GetOwner() ? *GetOwner()->GetName() : TEXT("null")));
+		//GEngine->AddOnScreenDebugMessage(
+		//	-1, 5.0f, FColor::Yellow,
+		//	FString::Printf(TEXT("Connection: %s"), GetNetConnection() ? TEXT("O") : TEXT("X")));
 
 		Client_OnHit();	// ClientRPC로 호출
 		//Client_OnHit_Implementation(); // 그냥 호출해서 로컬 실행
@@ -93,22 +102,22 @@ void ARPCCharacter::Client_OnHit_Implementation()
 {
 	FString RoleName = HasAuthority() ? TEXT("Server") : TEXT("Client");
 	FString ControllerName = GetController() ? GetController()->GetName() : TEXT("NoController");
-	// 컨트롤러가 내 로컬 플레이어 컨트롤러인지 확인
+
+	//GEngine->AddOnScreenDebugMessage(
+	//	-1, 5.0f, FColor::Red,
+	//	FString::Printf(TEXT("[%s] %s : 내가 맞았음"), *RoleName, *ControllerName)
+	//);
+
 	APlayerController* PC = Cast<APlayerController>(GetController());
+	PC->ClientStartCameraShake(CameraShakeClass);
 
-	// PC가 존재하고, 그 PC가 로컬 플레이어일 때만 실행 (IsLocalController 검사 등)
-	if (PC && PC->IsLocalController())
-	{
-		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("내가 맞았음"));
-		PC->ClientStartCameraShake(CameraShakeClass);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(), 
+		EffectClass, 
+		GetActorLocation() + FVector::UpVector * 100.0f, 
+		FRotator::ZeroRotator,
+		FVector::OneVector, true, true, ENCPoolMethod::AutoRelease);
 
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(),
-			EffectClass,
-			GetActorLocation() + FVector::UpVector * 100.0f,
-			FRotator::ZeroRotator,
-			FVector::OneVector, true, true, ENCPoolMethod::AutoRelease);
-	}
 }
 
 void ARPCCharacter::OnRef_Health()

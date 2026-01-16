@@ -4,34 +4,36 @@
 #include "Trap/PoisonTrap.h"
 #include "Components/SphereComponent.h"
 #include "NiagaraComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 
 // Sets default values
 APoisonTrap::APoisonTrap()
 {
- 	
 	PrimaryActorTick.bCanEverTick = true;
 
 	bReplicates = true;
 
-	DamageVolume = CreateDefaultSubobject<USphereComponent>(TEXT("DamageVolume"));
+	DamageVolume = CreateDefaultSubobject<USphereComponent>(TEXT("DamageVolue"));
 	SetRootComponent(DamageVolume);
 
-	TrapEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrapEffect"));
+	TrapEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Effect"));
 	TrapEffect->SetupAttachment(RootComponent);
 	TrapEffect->SetAutoActivate(true);
 
-
+	//ActivateEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ActivateEffect"));
+	//ActivateEffect->SetupAttachment(RootComponent);
+	//ActivateEffect->SetRelativeLocation(FVector::UpVector * 100.0f);
+	//ActivateEffect->SetAutoActivate(false);
 }
 
 // Called when the game starts or when spawned
 void APoisonTrap::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	DamageVolume->OnComponentBeginOverlap.AddDynamic(this, &APoisonTrap::OnOverlapBegin);
 	DamageVolume->OnComponentEndOverlap.AddDynamic(this, &APoisonTrap::OnOverlapEnd);
 }
@@ -42,10 +44,10 @@ void APoisonTrap::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActo
 	{
 		DamageTargetActors.AddUnique(OtherActor);
 
-		FTimerManager& TimerManaget = GetWorld()->GetTimerManager();
-		if (!TimerManaget.IsTimerActive(DamageTimerHandle))
+		FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+		if (!TimerManager.IsTimerActive(DamageTimerHandle))
 		{
-			TimerManaget.SetTimer(
+			TimerManager.SetTimer(
 				DamageTimerHandle,
 				this, &APoisonTrap::ApplyDamage,
 				DamageInterval, true
@@ -96,7 +98,7 @@ void APoisonTrap::Multicast_ActivateEffect_Implementation()
 			ActivateEffect,
 			GetActorLocation() + FVector::UpVector * 100.0f,
 			GetActorRotation(),
-			FVector::OneVector, true, true,
+			FVector::OneVector, true, true, 
 			ENCPoolMethod::AutoRelease);
 	}
 }
